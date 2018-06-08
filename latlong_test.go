@@ -72,8 +72,9 @@ func TestLookupPixel(t *testing.T) {
 		// Little solid tile:
 		{2924, 2316, "America/Belize"},
 	}
+	scale := int(*flagScale)
 	for _, tt := range cases {
-		if got := lookupPixel(tt.x, tt.y); got != tt.want {
+		if got := lookupPixel(tt.x*scale/32, tt.y*scale/32); got != tt.want {
 			t.Errorf("lookupPixel(%v, %v) = %q; want %q", tt.x, tt.y, got, tt.want)
 		}
 	}
