@@ -4,3 +4,6 @@ world
 *.png
 \#*
 .#*
+data
+ne_10m_admin_0_map_units.zip
+tz_world.zip

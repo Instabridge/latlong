@@ -36,7 +36,6 @@ import (
 	"os"
 	"sort"
 	"testing"
-	"time"
 
 	"github.com/golang/freetype/raster"
 	shp "github.com/jonas-p/go-shp"
@@ -50,6 +49,603 @@ var (
 	flagWriteCsv   = flag.Bool("write_csv", false, "Write CSV with zone colours")
 	flagScale      = flag.Float64("scale", 32, "Scaling factor. This many pixels wide & tall per degree (e.g. scale 1 is 360 x 180). Increasingly this code assumes a scale of 32, though.")
 )
+
+func adm3toISO(alpha3 string) string {
+	switch alpha3 {
+	case "AFG":
+		return "AF"
+	case "GEA":
+		return "GE"
+	case "WSB":
+		return "GB"
+	case "ALD":
+		return "AX"
+	case "ALB":
+		return "AL"
+	case "DZA":
+		return "DZ"
+	case "ASM":
+		return "AS"
+	case "AND":
+		return "AD"
+	case "AGO":
+		return "AO"
+	case "AIA":
+		return "AI"
+	case "ATA":
+		return "AQ"
+	case "ACA":
+		return "AG"
+	case "ARG":
+		return "AR"
+	case "ARM":
+		return "AM"
+	case "ABW":
+		return "AW"
+	case "ATC":
+		return "AU"
+	case "AUS":
+		return "AU"
+	case "AUT":
+		return "AT"
+	case "AZE":
+		return "AZ"
+	case "PAZ":
+		return "PT"
+	case "BHR":
+		return "BH"
+	case "BJN":
+		return "XX"
+	case "FQI":
+		return "UM"
+	case "BGD":
+		return "BD"
+	case "BRB":
+		return "BB"
+	case "ACB":
+		return "AG"
+	case "KAB":
+		return "KZ"
+	case "BLR":
+		return "BY"
+	case "BLZ":
+		return "BZ"
+	case "BEN":
+		return "BJ"
+	case "BMU":
+		return "BM"
+	case "BTN":
+		return "BT"
+	case "BOL":
+		return "BO"
+	case "BHF":
+		return "BA"
+	case "BWA":
+		return "BW"
+	case "PNB":
+		return "PG"
+	case "BVT":
+		return "BV"
+	case "BRA":
+		return "BR"
+	case "BHB":
+		return "BA"
+	case "IOT":
+		return "IO"
+	case "VGB":
+		return "VG"
+	case "BRN":
+		return "BN"
+	case "BCR":
+		return "BE"
+	case "BGR":
+		return "BG"
+	case "BFA":
+		return "BF"
+	case "BDI":
+		return "BI"
+	case "CPV":
+		return "CV"
+	case "KHM":
+		return "KH"
+	case "CMR":
+		return "CM"
+	case "CAN":
+		return "CA"
+	case "NLY":
+		return "NL"
+	case "CYM":
+		return "KY"
+	case "CAF":
+		return "CF"
+	case "TCD":
+		return "TD"
+	case "CHL":
+		return "CL"
+	case "CHN":
+		return "CN"
+	case "CXR":
+		return "CX"
+	case "CLP":
+		return "FR"
+	case "CCK":
+		return "CC"
+	case "COL":
+		return "CO"
+	case "COM":
+		return "KM"
+	case "COK":
+		return "CK"
+	case "CSI":
+		return "AU"
+	case "CRI":
+		return "CR"
+	case "HRV":
+		return "HR"
+	case "CUB":
+		return "CU"
+	case "CUW":
+		return "CW"
+	case "CYP":
+		return "CY"
+	case "CNM":
+		return "CY"
+	case "CZE":
+		return "CZ"
+	case "COD":
+		return "CD"
+	case "DNK":
+		return "DK"
+	case "ESB":
+		return "GB"
+	case "DJI":
+		return "DJ"
+	case "DMA":
+		return "DM"
+	case "DOM":
+		return "DO"
+	case "TLS":
+		return "TL"
+	case "ECU":
+		return "EC"
+	case "EGY":
+		return "EG"
+	case "SLV":
+		return "SV"
+	case "ENG":
+		return "GB"
+	case "GNQ":
+		return "GQ"
+	case "ERI":
+		return "ER"
+	case "EST":
+		return "EE"
+	case "SWZ":
+		return "SZ"
+	case "ETH":
+		return "ET"
+	case "FLK":
+		return "FK"
+	case "FRO":
+		return "FO"
+	case "FSM":
+		return "FM"
+	case "FJI":
+		return "FJ"
+	case "FIN":
+		return "FI"
+	case "BFR":
+		return "BE"
+	case "FXX":
+		return "FR"
+	case "GUF":
+		return "GF"
+	case "PYF":
+		return "PF"
+	case "ATF":
+		return "RE"
+	case "GAB":
+		return "GA"
+	case "GMB":
+		return "GM"
+	case "GAZ":
+		return "PS"
+	case "GEG":
+		return "GE"
+	case "DEU":
+		return "DE"
+	case "GHA":
+		return "GH"
+	case "GIB":
+		return "GI"
+	case "GRC":
+		return "GR"
+	case "GRL":
+		return "GL"
+	case "GRD":
+		return "GD"
+	case "GLP":
+		return "GP"
+	case "GUM":
+		return "GU"
+	case "GTM":
+		return "GT"
+	case "GGY":
+		return "GG"
+	case "GIN":
+		return "GN"
+	case "GNB":
+		return "GW"
+	case "GUY":
+		return "GY"
+	case "HTI":
+		return "HT"
+	case "HMD":
+		return "HM"
+	case "HND":
+		return "HN"
+	case "HKG":
+		return "HK"
+	case "HQI":
+		return "UM"
+	case "HUN":
+		return "HU"
+	case "ISL":
+		return "IS"
+	case "IND":
+		return "IN"
+	case "IDN":
+		return "ID"
+	case "IRN":
+		return "IR"
+	case "IRR":
+		return "IQ"
+	case "IRK":
+		return "IQ"
+	case "IRL":
+		return "IE"
+	case "IMN":
+		return "IM"
+	case "ISR":
+		return "IL"
+	case "ITA":
+		return "IT"
+	case "CIV":
+		return "CI"
+	case "JAM":
+		return "JM"
+	case "NJM":
+		return "SJ"
+	case "JPN":
+		return "JP"
+	case "DQI":
+		return "UM"
+	case "JEY":
+		return "JE"
+	case "JQI":
+		return "UM"
+	case "JOR":
+		return "JO"
+	case "KAZ":
+		return "KZ"
+	case "KEN":
+		return "KE"
+	case "KQI":
+		return "UM"
+	case "KIR":
+		return "KI"
+	case "KNZ":
+		return "KP"
+	case "KNX":
+		return "KR"
+	case "KOS":
+		return "XK"
+	case "KWT":
+		return "KW"
+	case "KGZ":
+		return "KG"
+	case "LAO":
+		return "LA"
+	case "LVA":
+		return "LV"
+	case "LBN":
+		return "LB"
+	case "LSO":
+		return "LS"
+	case "LBR":
+		return "LR"
+	case "LBY":
+		return "LY"
+	case "LIE":
+		return "LI"
+	case "LTU":
+		return "LT"
+	case "LUX":
+		return "LU"
+	case "MAC":
+		return "MO"
+	case "MKD":
+		return "MK"
+	case "MDG":
+		return "MG"
+	case "PMD":
+		return "PT"
+	case "MWI":
+		return "MW"
+	case "MYS":
+		return "MY"
+	case "MDV":
+		return "MV"
+	case "MLI":
+		return "ML"
+	case "MLT":
+		return "MT"
+	case "MHL":
+		return "MH"
+	case "MTQ":
+		return "MQ"
+	case "MRT":
+		return "MR"
+	case "MUS":
+		return "MU"
+	case "MYT":
+		return "YT"
+	case "MEX":
+		return "MX"
+	case "MQI":
+		return "UM"
+	case "MDA":
+		return "MD"
+	case "MCO":
+		return "MC"
+	case "MNG":
+		return "MN"
+	case "MNE":
+		return "ME"
+	case "MSR":
+		return "MS"
+	case "MAR":
+		return "MA"
+	case "MOZ":
+		return "MZ"
+	case "MMR":
+		return "MM"
+	case "NAM":
+		return "NA"
+	case "NRU":
+		return "NR"
+	case "BQI":
+		return "UM"
+	case "NPL":
+		return "NP"
+	case "NLX":
+		return "NL"
+	case "NCL":
+		return "NC"
+	case "NZL":
+		return "NZ"
+	case "NIC":
+		return "NI"
+	case "NER":
+		return "NE"
+	case "NGA":
+		return "NG"
+	case "NIU":
+		return "NU"
+	case "NFK":
+		return "NF"
+	case "PRK":
+		return "KP"
+	case "CYN":
+		return "CY"
+	case "NIR":
+		return "GB"
+	case "MNP":
+		return "MP"
+	case "NOW":
+		return "NO"
+	case "OMN":
+		return "OM"
+	case "PAK":
+		return "PK"
+	case "PLW":
+		return "PW"
+	case "LQI":
+		return "UM"
+	case "PAN":
+		return "PA"
+	case "PNX":
+		return "PG"
+	case "PFA":
+		return "CN"
+	case "PRY":
+		return "PY"
+	case "PER":
+		return "PE"
+	case "PHL":
+		return "PH"
+	case "PCN":
+		return "PN"
+	case "POL":
+		return "PL"
+	case "PRX":
+		return "PT"
+	case "PRI":
+		return "PR"
+	case "SOP":
+		return "SO"
+	case "QAT":
+		return "QA"
+	case "COG":
+		return "CG"
+	case "BIS":
+		return "BA"
+	case "REU":
+		return "RE"
+	case "ROU":
+		return "RO"
+	case "RUS":
+		return "RU"
+	case "RWA":
+		return "RW"
+	case "BLM":
+		return "BL"
+	case "SHN":
+		return "SH"
+	case "KNA":
+		return "KN"
+	case "LCA":
+		return "LC"
+	case "MAF":
+		return "MF"
+	case "SPM":
+		return "PM"
+	case "VCT":
+		return "VC"
+	case "WSM":
+		return "WS"
+	case "SMR":
+		return "SM"
+	case "STP":
+		return "ST"
+	case "SAU":
+		return "SA"
+	case "SCR":
+		return "XX"
+	case "SCT":
+		return "GB"
+	case "SEN":
+		return "SN"
+	case "SRS":
+		return "RS"
+	case "SER":
+		return "CO"
+	case "SYC":
+		return "SC"
+	case "KAS":
+		return "IN"
+	case "SLE":
+		return "SL"
+	case "SGP":
+		return "SG"
+	case "SXM":
+		return "SX"
+	case "SVK":
+		return "SK"
+	case "SVN":
+		return "SI"
+	case "SLB":
+		return "SB"
+	case "SOX":
+		return "SO"
+	case "SOL":
+		return "SO"
+	case "ZAF":
+		return "ZA"
+	case "SGS":
+		return "GS"
+	case "KOR":
+		return "KR"
+	case "SDS":
+		return "SS"
+	case "ESP":
+		return "ES"
+	case "PGA":
+		return "XX"
+	case "LKA":
+		return "LK"
+	case "SDN":
+		return "SD"
+	case "SUR":
+		return "SR"
+	case "NSV":
+		return "SJ"
+	case "SWE":
+		return "SE"
+	case "CHE":
+		return "CH"
+	case "SYX":
+		return "SY"
+	case "TWN":
+		return "TW"
+	case "TJK":
+		return "TJ"
+	case "TZA":
+		return "TZ"
+	case "THA":
+		return "TH"
+	case "BHS":
+		return "BS"
+	case "TGO":
+		return "TG"
+	case "TKL":
+		return "TK"
+	case "TON":
+		return "TO"
+	case "TTO":
+		return "TT"
+	case "TUN":
+		return "TN"
+	case "TUR":
+		return "TR"
+	case "TKM":
+		return "TM"
+	case "TCA":
+		return "TC"
+	case "TUV":
+		return "TV"
+	case "UGA":
+		return "UG"
+	case "UKR":
+		return "UA"
+	case "SYU":
+		return "SY"
+	case "ARE":
+		return "AE"
+	case "USA":
+		return "US"
+	case "VIR":
+		return "VI"
+	case "URY":
+		return "UY"
+	case "USG":
+		return "US"
+	case "UZB":
+		return "UZ"
+	case "VUT":
+		return "VU"
+	case "VAT":
+		return "VA"
+	case "VEN":
+		return "VE"
+	case "VNM":
+		return "VN"
+	case "SRV":
+		return "RS"
+	case "WQI":
+		return "UM"
+	case "WLS":
+		return "GB"
+	case "WLF":
+		return "WF"
+	case "BWR":
+		return "BE"
+	case "WEB":
+		return "PS"
+	case "SAH":
+		return "EH"
+	case "YEM":
+		return "YE"
+	case "ZMB":
+		return "ZM"
+	case "TZZ":
+		return "TZ"
+	case "ZWE":
+		return "ZW"
+	default:
+		return "XX"
+	}
+}
 
 func saveToPNGFile(filePath string, m image.Image) {
 	log.Printf("Encoding image %s ...", filePath)
@@ -118,9 +714,9 @@ func worldImage(t *testing.T) (im *image.RGBA, zoneOfColor map[color.RGBA]string
 		r.Rasterize(raster.NewMonochromePainter(painter))
 	}
 
-	sr, err := shp.Open("world/tz_world.shp")
+	sr, err := shp.Open("data/ne_10m_admin_0_map_units.shp")
 	if err != nil {
-		t.Fatalf("Error opening world/tz_world.shp: %v; unzip it from http://efele.net/maps/tz/world/tz_world.zip", err)
+		t.Fatalf("Error opening shape file: %v", err)
 	}
 	defer sr.Close()
 
@@ -130,12 +726,9 @@ func worldImage(t *testing.T) (im *image.RGBA, zoneOfColor map[color.RGBA]string
 		if !ok {
 			t.Fatalf("Unknown shape %T", p)
 		}
-		zoneName := sr.ReadAttribute(i, 0)
-		if zoneName == "uninhabited" {
+		zoneName := adm3toISO(sr.ReadAttribute(i, 12))
+		if zoneName == "XX" {
 			continue
-		}
-		if _, err := time.LoadLocation(zoneName); err != nil {
-			t.Fatalf("Failed to load: %v (%v)", zoneName, err)
 		}
 		hash := crc32.Checksum([]byte(zoneName), tab)
 		col := color.RGBA{uint8(hash >> 24), uint8(hash >> 16), uint8(hash >> 8), 255}
@@ -148,17 +741,23 @@ func worldImage(t *testing.T) (im *image.RGBA, zoneOfColor map[color.RGBA]string
 		}
 
 		var xys []int
-		for _, pt := range p.Points {
+		part := 1
+		for i, pt := range p.Points {
+			if part < int(p.NumParts) && i == int(p.Parts[part]) {
+				drawPoly(col, xys...)
+				xys = xys[:0]
+				part += 1
+			}
 			xys = append(xys, int((pt.X+180)*scale), int((90-pt.Y)*scale))
 		}
 		drawPoly(col, xys...)
 	}
 
 	// adjust point from scale 32 to whatever the user is using.
-	ap := func(x int) int { return x * int(scale) / 32 }
+	//ap := func(x int) int { return x * int(scale) / 32 }
 	// Fix some rendering glitches:
 	// {186 205 234 255} = Europe/Rome
-	drawPoly(color.RGBA{186, 205, 234, 255},
+	/*drawPoly(color.RGBA{186, 205, 234, 255},
 		ap(6156), ap(1468),
 		ap(6293), ap(1596),
 		ap(6293), ap(1598),
@@ -175,7 +774,7 @@ func worldImage(t *testing.T) (im *image.RGBA, zoneOfColor map[color.RGBA]string
 		ap(2171), ap(1536),
 		ap(2217), ap(1714),
 		ap(2204), ap(1724),
-		ap(2160), ap(1537))
+		ap(2160), ap(1537))*/
 	return
 }
 
@@ -306,6 +905,7 @@ func TestGenerate(t *testing.T) {
 	var imo *image.RGBA
 	if *flagWriteImage {
 		imo = cloneImage(im)
+		saveToPNGFile("regions.pre.png", imo)
 	}
 	dupColorTiles := 0
 

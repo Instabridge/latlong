@@ -23,7 +23,7 @@ func TestLookupLatLong(t *testing.T) {
 		lat, long float64
 		want      string
 	}{
-		{37.7833, -122.4167, "America/Los_Angeles"},
+		{37.7833, -122.4167, "US"},
 	}
 	for _, tt := range cases {
 		if got := LookupZoneName(tt.lat, tt.long); got != tt.want {
@@ -49,33 +49,33 @@ func TestLookupPixel(t *testing.T) {
 		// previous bug with the wrong oceanIndex. This pixmap
 		// leaf resolves to leaf index 0xff (Asia/Phnom_Penh).
 		// It was being treated as a special value. It's not.
-		{9200, 2410, "Asia/Phnom_Penh"},
-		{9047, 2488, "Asia/Phnom_Penh"},
+		{9200, 2410, "KH"},
+		{9047, 2488, "KH"},
 
 		// one-bit leaf tile:
-		{9290, 530, "Asia/Krasnoyarsk"},
-		{9290, 531, "Asia/Yakutsk"},
+		{9290, 530, "RU"},
+		{9290, 531, "RU"},
 
 		// four-bit tile:
-		{2985, 1654, "America/Indiana/Vincennes"},
-		{2986, 1654, "America/Indiana/Marengo"},
-		{2986, 1655, "America/Indiana/Tell_City"},
+		{2985, 1654, "US"},
+		{2986, 1654, "US"},
+		{2986, 1655, "US"},
 
 		// Empty tile:
 		{4000, 2000, ""},
 
 		// Big 1-color tile in ocean with island:
-		{3687, 1845, "Atlantic/Bermuda"},
+		{3687, 1845, "BM"},
 		// Same, but off Oregon coast:
-		{1747, 1486, "America/Los_Angeles"},
+		{1781, 1363, "US"},
 
 		// Little solid tile:
-		{2924, 2316, "America/Belize"},
+		{2924, 2316, "BZ"},
 	}
 	scale := int(*flagScale)
 	for _, tt := range cases {
 		if got := lookupPixel(tt.x*scale/32, tt.y*scale/32); got != tt.want {
-			t.Errorf("lookupPixel(%v, %v) = %q; want %q", tt.x, tt.y, got, tt.want)
+			t.Errorf("lookupPixel(%v, %v) => (%v, %v); got %q; want %q", tt.x, tt.y, tt.x*scale/32, tt.y*scale/32, got, tt.want)
 		}
 	}
 }
