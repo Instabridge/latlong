@@ -45,6 +45,7 @@ import (
 
 var (
 	flagGenerate   = flag.Bool("generate", false, "Do generation")
+	flagHeader     = flag.Bool("c_header", false, "Generate C header")
 	flagWriteImage = flag.Bool("write_image", false, "Write out a debug image")
 	flagScale      = flag.Float64("scale", 32, "Scaling factor. This many pixels wide & tall per degree (e.g. scale 1 is 360 x 180). Increasingly this code assumes a scale of 32, though.")
 )
@@ -385,6 +386,152 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+func TestHeader(t *testing.T) {
+	if !*flagHeader {
+		t.Skip("skipping generation without --c_header flag")
+	}
+
+	im, zoneOfColor := worldImage(t)
+
+	// The auto-generated source file (z_gen_tables.h)
+	var gen bytes.Buffer
+	gen.WriteString("// Auto-generated file. See README or Makefile.\n\n")
+
+	// Source code for just the zoneLookers variables.
+	var leaves bytes.Buffer
+
+	// Maps from a unique key (either a string or colorTile) to
+	// its index.
+	var zoneIndex setIndexTracker
+
+	zoneIndexOfColor := func(c color.RGBA) uint16 {
+		if (c == color.RGBA{}) {
+			return oceanIndex
+		}
+		idx, ok := zoneIndex.Lookup(zoneOfColor[c])
+		if !ok {
+			t.Fatalf("failed to find zone index for color %+v", c)
+		}
+		return idx
+	}
+
+	// Add the static timezones (~408 of them). If a tile (which
+	// can range from 8 to 256 pixels square) doesn't resolve to
+	// one of these, it'll resolve to an image tile that then
+	// resolves to one of these.
+	{
+		var zones []string
+		for _, zone := range zoneOfColor {
+			zones = append(zones, zone)
+		}
+		sort.Strings(zones)
+		for i, zone := range zones {
+			idx, _ := zoneIndex.Add(zone)
+			if idx != uint16(i) {
+				panic("unexpected")
+			}
+			fmt.Fprintf(&leaves, "\t\t{ .type = 'S', .data = { .name = \"%s\" } },\n", zone)
+		}
+		log.Printf("Num zones = %d", len(zones))
+	}
+
+	var imo *image.RGBA
+	if *flagWriteImage {
+		imo = cloneImage(im)
+		saveToPNGFile("regions.pre.png", imo)
+	}
+	dupColorTiles := 0
+
+	for _, sizeShift := range []uint8{5, 4, 3, 2, 1, 0} {
+		fmt.Fprintf(&gen, "static const struct zl_zoom_level zoom_level_%d = { .tiles = {\n", sizeShift)
+		pass := newSizePass(im, imo, sizeShift)
+
+		skipSquares := 0
+		outputTiles := 0
+		sizeCount := map[int]int{} // num colors -> count
+
+		pass.foreachTile(func(tile *tileMeta) {
+			if tile.skipped {
+				skipSquares++
+				return
+			}
+			nColor := len(tile.colors)
+			sizeCount[nColor]++
+			if nColor < 2 {
+				tile.erase()
+			}
+			if nColor == 1 {
+				zoneName := zoneOfColor[tile.color()]
+				if idx, isNew := zoneIndex.Add(zoneName); isNew {
+					panic("zone should've been registered: " + zoneName)
+				} else {
+					outputTiles++
+					fmt.Fprintf(&gen, "\t{ .key = %d, .idx = %d},\n", tile.key(), idx)
+				}
+				tile.drawBorder()
+				return
+			}
+			if nColor == 0 {
+				tile.paintOcean()
+				return
+			}
+			if sizeShift == 0 && nColor >= 2 {
+				ct := tile.colorTile()
+				idx, isNew := zoneIndex.Add(ct)
+				if isNew {
+					if nColor == 2 {
+						leaves.WriteString("\t\t{ .type = '2', .data = { .bitmap = {\n")
+						i1, i2, bits := pass.bitmapValues(ct, zoneIndexOfColor)
+						fmt.Fprintf(&leaves, "\t\t\t.idx = {%d,%d},\n", i1, i2)
+						fmt.Fprintf(&leaves, "\t\t\t.bits = 0x%08xULL\n", bits)
+						leaves.WriteString("\t\t} } },\n")
+					} else {
+						leaves.WriteString("\t\t{ .type = 'P', .data = { .pixmap = \"")
+						pixmap := pass.pixmapIndexBytes(ct, zoneIndexOfColor)
+						for _, b := range pixmap {
+							fmt.Fprintf(&leaves, "\\%03o", b)
+						}
+						leaves.WriteString("\" } },\n")
+					}
+				} else {
+					dupColorTiles++
+				}
+				outputTiles++
+				fmt.Fprintf(&gen, "\t{ .key = %d, .idx = %d},\n", tile.key(), idx)
+			}
+		})
+		log.Printf("For size %d, skipped %d, dist: %+v", pass.size, skipSquares, sizeCount)
+
+		fmt.Fprintf(&gen, "}, .count = %d };\n", outputTiles)
+	}
+
+	gen.WriteString("static struct zl_table table = {\n")
+	fmt.Fprintf(&gen, "\t.deg_pixels = %d,\n", int(*flagScale))
+	gen.WriteString("\t.zoom_levels = {\n")
+	gen.WriteString("\t\t&zoom_level_0,\n")
+	gen.WriteString("\t\t&zoom_level_1,\n")
+	gen.WriteString("\t\t&zoom_level_2,\n")
+	gen.WriteString("\t\t&zoom_level_3,\n")
+	gen.WriteString("\t\t&zoom_level_4,\n")
+	gen.WriteString("\t\t&zoom_level_5\n")
+	gen.WriteString("\t},\n")
+
+	log.Printf("Duplicate 8x8 pixmaps: %d", dupColorTiles)
+
+	if imo != nil {
+		saveToPNGFile("regions.png", imo)
+	}
+
+	gen.WriteString("\t.leaves = {\n")
+	gen.Write(leaves.Bytes())
+	gen.WriteString("\t}\n")
+	gen.WriteString("};\n") // close table
+
+	if err := ioutil.WriteFile("z_gen_tables.h", gen.Bytes(), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 type sizePass struct {
 	width, height  int
 	size           int // of tile. 8 << sizeShift
@@ -498,6 +645,29 @@ func (p *sizePass) bitmapPixmapBytes(ct colorTile, fn func(color.RGBA) uint16) [
 	binary.BigEndian.PutUint16(p.buf[2:4], fn(c2))
 	binary.BigEndian.PutUint64(p.buf[4:12], bits)
 	return p.buf[:12]
+}
+
+func (p *sizePass) bitmapValues(ct colorTile, fn func(color.RGBA) uint16) (uint16, uint16, uint64) {
+	var c1, c2 color.RGBA
+	var bits uint64
+	var n uint8
+	for _, row := range ct {
+		for _, c := range row {
+			if n == 0 {
+				c1 = c
+			} else {
+				if c != c1 {
+					c2 = c
+					bits |= (1 << n)
+				}
+			}
+			n++
+		}
+	}
+	if c1 == c2 {
+		panic("didn't see two colors")
+	}
+	return fn(c1), fn(c2), bits
 }
 
 type tileMeta struct {
