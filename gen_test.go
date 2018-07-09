@@ -245,7 +245,7 @@ func testAllPixels_gen(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 	if !*flagGenerate {
-		t.Skip("skipping generationg without --generate flag")
+		t.Skip("skipping generation without --generate flag")
 	}
 
 	im, zoneOfColor := worldImage(t)
