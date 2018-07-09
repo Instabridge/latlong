@@ -47,6 +47,7 @@ var (
 	flagGenerate   = flag.Bool("generate", false, "Do generation")
 	flagHeader     = flag.Bool("c_header", false, "Generate C header")
 	flagWriteImage = flag.Bool("write_image", false, "Write out a debug image")
+	flagWriteCsv   = flag.Bool("write_csv", false, "Write CSV with zone colours")
 	flagScale      = flag.Float64("scale", 32, "Scaling factor. This many pixels wide & tall per degree (e.g. scale 1 is 360 x 180). Increasingly this code assumes a scale of 32, though.")
 )
 
@@ -250,6 +251,12 @@ func TestGenerate(t *testing.T) {
 	}
 
 	im, zoneOfColor := worldImage(t)
+
+	if *flagWriteCsv {
+		for color, zoneName := range zoneOfColor {
+			fmt.Printf("%s,#%02x%02x%02x\n", zoneName, color.R, color.G, color.B)
+		}
+	}
 
 	// The auto-generated source file (z_gen_tables.go)
 	var gen bytes.Buffer
