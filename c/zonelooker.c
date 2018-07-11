@@ -30,7 +30,11 @@ struct zl_table {
 };
 
 #define table _zl_countries_table
+#if defined(ZL_TABLE_PATH)
+#include ZL_TABLE_PATH
+#else
 #include "../z_gen_tables.h"
+#endif
 #undef table
 
 const char *zoneLokupPixel(const struct zl_table *table, int x, int y);
