@@ -5,7 +5,7 @@ FileUtils.cp '../z_gen_tables.h', 'ext/table.h'
 
 Gem::Specification.new do |spec|
   spec.name          = "zonelooker"
-  spec.version       = '0.0.1'
+  spec.version       = '0.0.2'
   spec.authors       = ["Jesús A. Álvarez"]
   spec.email         = ["jesus@instabridge.com"]
   spec.summary       = "Look up latitude/longitude to country"
