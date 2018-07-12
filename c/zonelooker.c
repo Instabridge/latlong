@@ -102,8 +102,6 @@ const struct zl_tile * searchTileKey (const struct zl_zoom_level *zl, uint32_t k
 }
 
 const char *zoomLevelLookupTile(const struct zl_table *table, int level, int x, int y, uint32_t tk) {
-	uint32_t key = tk;
-	
 	const struct zl_zoom_level *zl = table->zoom_levels[level];
 	const struct zl_tile *tile = searchTileKey(zl, tk);
 	if (tile == NULL) return NULL;

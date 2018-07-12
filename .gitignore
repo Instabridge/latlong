@@ -7,3 +7,9 @@ world
 data
 ne_10m_admin_0_map_units.zip
 tz_world.zip
+libzonelooker.dylib
+gem/ext/Makefile
+gem/ext/table.h
+gem/ext/zonelooker_lib.c
+gem/ext/zonelooker.h
+*.gem
